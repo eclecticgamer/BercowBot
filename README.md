@@ -1,2 +1,2 @@
 # BercowBot
-to Bercown e
+to Bercown noobs on Discord
