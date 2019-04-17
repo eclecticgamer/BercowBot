@@ -100,7 +100,7 @@ class BotClient(commands.Bot):
 			await self.save_settings()
 			return 'I thank the Honourable Member for identifying this as the correct forum for political discussion'
 		else:
-			return 'I do hope that the Honourable Member is aware that the given channel has indeed already been identified as a channel of political discussion'
+			return random.choice(bot.settings['responses']['repeat'])
 	
 			
 		
@@ -143,7 +143,7 @@ async def burn(ctx, arg=None):
 async def setpolitics(ctx, arg=None):
 	#Check authorisation
 	if not ctx.message.author.id in bot.settings["admins"]:
-		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
+		bot_message = random.choice(bot.settings['responses']['unauthorised'])
 	else:
 		try:
 			#Identify channel and pass to bot.set_politics which will do the work and return a message
@@ -155,15 +155,14 @@ async def setpolitics(ctx, arg=None):
 
 		except:
 			# Broad exception because Bercow is lazy
-			bot_message = 'If the honourable member had consulted Erskine May, chapter 6, before making their request, they would have avoided wasting this chamber\'s time by issuing an invalid ' \
-							'request.\nI ask that they are more careful next time.'
+			bot_message = random.choice(bot.settings['responses']['invalid'])
 	await ctx.send(bot_message)
 
 
 @bot.command()
 async def nobercow(ctx, arg=None):
 	if not ctx.message.author.id in bot.settings["admins"]:
-		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
+		bot_message = random.choice(bot.settings['responses']['unauthorised'])
 		await ctx.channel.send(bot_message)
 		return
 
@@ -193,7 +192,7 @@ async def nobercow(ctx, arg=None):
 @bot.command()
 async def setmusic(ctx, arg=None):
 	if not ctx.message.author.id in bot.settings["admins"]:
-		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
+		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
 		return
 
@@ -229,7 +228,7 @@ async def setmusic(ctx, arg=None):
 @bot.command()
 async def setdj(ctx, arg=None):
 	if ctx.message.author.id not in bot.settings["admins"]:
-		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
+		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
 		return
 
@@ -246,8 +245,7 @@ async def setdj(ctx, arg=None):
 
 				await bot.save_settings
 			else:
-				bot_message = 'I tell the honourable member that I applaud their efforts, but I would remind them that this house does not need to hear a particular contribution ' \
-							  'multiple times, and I think their colleagues would appreciate it if they kept that in mind.'
+				bot_message =  random.choice(bot.settings['responses']['repeat']).format(ctx)
 				await ctx.send(bot_message)
 
 				return
@@ -361,7 +359,7 @@ async def vote(ctx, *args):
 @bot.command()
 async def source(ctx):
 	if ctx.message.author.id not in bot.settings["admins"]:
-		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
+		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
 		return
 

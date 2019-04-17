@@ -29,5 +29,9 @@
 			, "multiple_targets": ["It is most unparliamentary to cast such wide aspersions on honourable members.  Please be more specific in who you wish to address, {0.author.mention}"]
 			, "burns": ["Yes, {0.mention} is quite the fool"]
 			}
-    
+	,"responses":{"unauthorised": ["I certainly won't take orders such as those from a junior minister! Hrumph!"]
+		, "repeat": ["It is rather disappointing that the honourable member insists on providing information we already know. I would appreciate it greatly if they would cease such behaviour.","The honourable member should be aware that their request has already been made and acted on."
+		,"I assure the honourable member that I applaud their efforts, but I would remind them that this house does not need to hear a particular contribution multiple times, and I think their colleagues would appreciate it if they kept that in mind."]
+		, "invalid": ["If the honourable member had consulted Erskine May, chapter 6, before making their request, they would have avoided wasting this chamber's time by issuing an invalid request.\nI ask that they are more careful next time."]
+	}
 }
