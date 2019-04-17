@@ -100,7 +100,19 @@ class BotClient(commands.Bot):
 			await self.save_settings()
 			return 'I thank the Honourable Member for identifying this as the correct forum for political discussion'
 		else:
-			return random.choice(bot.settings['responses']['repeat'])
+			return random.choice(self.settings['responses']['repeat'])
+	
+	async def set_music(self, channel_id):
+		if channel_id not in self.settings['music_text']:
+			channel = self.get_channel(channel_id)
+			if channel is nothing:
+				return random.choice(self.settings['responses']['invalid'])
+			else:
+				self.settings['music_text'].append(channel_id)
+				await self.save_settings()
+				return 'I hereby give notice that the government has successfully passed a motion to designate ' + channel.name + ' a music channel.'
+		else:
+			return random.choice(self.settings['responses']['repeat'])
 	
 			
 		
@@ -193,35 +205,17 @@ async def nobercow(ctx, arg=None):
 async def setmusic(ctx, arg=None):
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
-		await ctx.channel.send(bot_message)
-		return
-
-	if arg is None:
-		if ctx.channel.id not in bot.settings["music_text"]:
-			bot.settings["music_text"].append(ctx.channel.id)
-			bot_message = 'I hereby give notice that the government has successfully passed a motion to designate this channel a music channel.'
-
-			await bot.save_settings()
-		else:
-			bot_message = 'It is rather disappointing that the honourable member insists on providing information we already know. If they would stop that would be much appreciated.'
 	else:
 		try:
-			if int(arg) not in bot.settings["music_text"]:
-				bot.settings["music_text"].append(int(arg))
-				channel_name = bot.get_channel(int(arg)).name
-
-				await bot.save_settings
+			if arg is None:
+				cid = ctx.channel.id
 			else:
-				bot_message = 'It is rather disappointing that the honourable member insists on providing information we already know. If they would stop that would be much appreciated.'
-				await ctx.send(bot_message)
-
-				return
+				cid = int(arg)
+			bot_message = await bot.set_music(cid)
+			await ctx.send(bot_message)
 		except:
 			# Broad exception because Bercow is lazy
-			bot_message = 'Unfortunately the Honourable Member has made an invalid request; I ask that they try again.'
-		else:
-			bot_message = 'I hereby give notice that the government has successfully passed a motion to designate ' + channel_name + ' a music channel.'
-
+			bot_message = random.choice(bot.settings['responses']['invalid'])
 	await ctx.send(bot_message)
 
 
