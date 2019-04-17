@@ -1,4 +1,6 @@
 # Work with Python 3.6
+# Test git push
+
 import asyncio
 from discord.ext import commands
 import random
