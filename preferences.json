@@ -23,6 +23,11 @@
     "response_options": [
         "ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place.",
         "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum.",
-        "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""
-    ]
+        "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""]
+, "burns": {"no_target": ["It should be readily apparent to honourable members that the burn command requires a target.  It's a point so blindingly obvious that only an extraordinarily clever and sophisticated person could fail to grasp it, {0.author.mention}"
+							]
+			, "multiple_targets": ["It is most unparliamentary to cast such wide aspersions on honourable members.  Please be more specific in who you wish to address, {0.author.mention}"]
+			, "burns": ["Yes, {0.mention} is quite the fool"]
+			}
+    
 }

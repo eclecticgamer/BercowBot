@@ -87,7 +87,7 @@ class BotClient(commands.Bot):
 			await message.channel.send(bot_message)
 			return True
 		return False
-		await self.process_commands(message)
+		
 	
 	async def save_settings(self):
 		#Saves the bot settings to an appropriate location
@@ -109,57 +109,34 @@ bot = BotClient(command_prefix, 'preferences.json')
 
 @bot.command()
 async def burn(ctx, arg=None):
+	#No target
 	if arg is None:
-		msg = 'It should be readily apparent to honourable members that the burn command requires a target.  It\'s a point so blindingly obvious that only an extraordinarily clever and sophisticated ' \
-			  'person could fail to grasp it, {0.author.mention}'.format(ctx)
-		await ctx.send(msg)
-		return
-
-	arg = arg.lower()
-
-	if arg == 'george':
-		guerro = bot.get_user(478649485048676383)
-		bot_message = 'Yes, {0.mention} is quite the fool'.format(guerro)
-		await ctx.send(bot_message)
-		return
-	#     bot_message = 'Yes, '
-	#     for g in bot.settings["georges"]:
-	#         g_user = bot.get_user(g)
-	#         if g_user in ctx.channel.members:
-	#             bot_message = bot_message + '{0.mention}'.format(g_user) + ', '
-
-		# bot_message = bot_message[::-1]
-		# bot_message = bot_message.replace(',', '', 1)
-		# bot_message = bot_message.replace(',', 'dna ', 1)
-		# bot_message = bot_message[::-1]
-		#
-		# bot_message = bot_message + 'are quite the fools'
-		#
-		# await ctx.send(bot_message)
-		# return
-
-	count = 0
-
-	if not ctx.message.mentions:
-		for x in ctx.channel.members:
-			if arg in x.display_name.lower() or arg in x.name.lower():
-				target = x
-				count = count + 1
-
-		if count == 0:
-			bot_message = 'It should be readily apparent to honourable members that the burn command requires a target.  It\'s a point so blindingly obvious that only an extraordinarily clever and sophisticated ' \
-			  'person could fail to grasp it, {0.author.mention}'.format(ctx)
-		elif count == 1:
-			bot_message = 'Yes, {0.mention} is quite the fool'.format(target)
+		bot_message = random.choice(bot.settings['burns']['no_target']).format(ctx)
+	#if no mentions we need to identify target(s)
+	elif not ctx.message.mentions:
+		#lol george
+		if arg.lower() == 'george':
+			target = bot.get_user(478649485048676383)
+			bot_message = random.choice(bot.settings['burns']['burns']).format(target)
 		else:
-			bot_message = 'It is most unparliamentary to cast such wide aspersions on honourable members.  Please be more specific in who you wish to address.'
-
-		await ctx.send(bot_message)
+			#count targets
+			count = 0
+			for x in ctx.channel.members:
+				if arg in x.display_name.lower() or arg in x.name.lower():
+					target = x
+					count = count + 1
+			if count == 0:
+				bot_message = random.choice(bot.settings['burns']['no_target']).format(ctx)
+			elif count == 1:
+				bot_message = random.choice(bot.settings['burns']['burns']).format(target)
+			else:
+				bot_message = random.choice(bot.settings['burns']['multiple_targets']).format(ctx)
 	else:
-		for x in ctx.message.mentions:
-			await ctx.message.channel.send('Yes, {0.mention} is quite the fool'.format(x))
-			print('{0.mention} just got burned'.format(x))
-
+		if len(ctx.message.mentions)>1:
+			bot_message = random.choice(bot.settings['burns']['multiple_targets']).format(ctx)
+		else:
+			bot_message = random.choice(bot.settings['burns']['burns']).format(ctx.message.mentions[0])
+	await ctx.send(bot_message)
 
 
 @bot.command()
