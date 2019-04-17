@@ -1,7 +1,28 @@
-{"response_options": ["ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place."
-					, "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum."
-					, "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""]
-	, "politics_triggers": ["brexit", "politics", "tories", "tory", "labour", "corbyn", "theresa may", "referendum", "election", "parliament"]
-	, "no_bercow": []
-	, "politics_channels": []
-	}
+{
+    "admins": [
+        345468527538339850
+    ],
+    "music_text": [],
+    "music_voice": [],
+    "no_bercow": [],
+    "politics_channels": [
+        567115046774112257
+    ],
+    "politics_triggers": [
+        "brexit",
+        "politics",
+        "tories",
+        "tory",
+        "labour",
+        "corbyn",
+        "theresa may",
+        "referendum",
+        "election",
+        "parliament"
+    ],
+    "response_options": [
+        "ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place.",
+        "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum.",
+        "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""
+    ]
+}

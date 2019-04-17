@@ -1,11 +1,12 @@
 # Work with Python 3.6
-# Test git push
 
 import asyncio
 from discord.ext import commands
 import random
 import argparse
 import json
+import aiofiles
+
 #from methods import save
 
 
@@ -14,8 +15,7 @@ class NoExitParser(argparse.ArgumentParser):
 		raise ValueError(message)
 
 
-owner_id = 169891281139531776
-politics_triggers = ['brexit', 'politics', 'tories', 'tory', 'labour', 'corbyn', 'theresa may', 'referendum', 'election', 'parliament']
+owner_id = 345468527538339850
 command_prefix = '?'
 
 #with open('preferences.json', 'r') as file:
@@ -44,12 +44,19 @@ class BotClient(commands.Bot):
 		super().__init__(command_prefix = command_prefix)
 		self.config_location = config
 		with open(config,'r') as x:
-			settings_file = json.load(x)
+			self.settings = json.load(x)
+		if not owner_id in self.settings['admins']:
+			self.settings['admins'].append(owner_id)
+		'''
 		self.settings = {}
 		self.settings['response_options'] = settings_file['response_options']
 		self.settings['politics_triggers'] = settings_file['politics_triggers']
 		self.settings['no_bercow'] = settings_file['no_bercow']
 		self.settings['politics_channels'] = settings_file['politics_channels']
+		self.settings['music_voice'] = settings_file['music_voice']
+		self.
+		'''
+		self.current_votes = []
 		print(json.dumps(self.settings, indent = 4, sort_keys = True))
 	
 
@@ -58,22 +65,39 @@ class BotClient(commands.Bot):
 		print(self.user.name)
 		print(self.user.id)
 		print('------')
-	
+
 
 	async def on_message(self, message):
-		if message.author.bot or message.channel.id in preferences["no_bercow"]:
+		if message.author.bot or message.channel.id in self.settings["no_bercow"]:
 			return
 
+		if await self.mr_speaker(message):
+			return
+
+		if await self.politics_chat(message):
+			return
+			
+		await self.process_commands(message)
+	
+	async def mr_speaker(self, message):
 		if ('bercow' in message.content or self.user in message.mentions) and command_prefix not in message.content:
 			await message.channel.send('ORDER! The Honourable Member must refer to me as Mr Speaker at all times. I ask that they withdraw their comment.')
-			return
-
+			return True
+		return False
+	
+	async def politics_chat(self, message):
 		message_words = message.content.lower().split(' ')
-		if not set(message_words).isdisjoint(set(self.politics_triggers)) and message.channel.id not in preferences["politics_channels"]:
+		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
 			bot_message = random.choice(self.response_options)
 			await message.channel.send(bot_message)
-
+			return True
+		return False
 		await self.process_commands(message)
+	
+	async def save_settings(self):
+		async with aiofiles.open(self.config_location, "w+") as x:
+			await x.write(json.dumps(self.settings, indent = 4, sort_keys = True))
+		
 
 bot = BotClient(command_prefix, 'preferences.json')
 
@@ -93,7 +117,7 @@ async def burn(ctx, arg=None):
 		await ctx.send(bot_message)
 		return
 	#     bot_message = 'Yes, '
-	#     for g in preferences["georges"]:
+	#     for g in bot.settings["georges"]:
 	#         g_user = bot.get_user(g)
 	#         if g_user in ctx.channel.members:
 	#             bot_message = bot_message + '{0.mention}'.format(g_user) + ', '
@@ -134,28 +158,28 @@ async def burn(ctx, arg=None):
 
 @bot.command()
 async def setpolitics(ctx, arg=None):
-	if not ctx.message.author.id in preferences["admins"]:
+	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
 		await ctx.channel.send(bot_message)
 		return
 
 	if arg is None:
-		if ctx.channel.id not in preferences["politics_channels"]:
-			preferences["politics_channels"].append(ctx.channel.id)
+		if ctx.channel.id not in bot.settings["politics_channels"]:
+			bot.settings["politics_channels"].append(ctx.channel.id)
 			bot_message = 'I thank the Honourable Member for identifying this as the correct forum for political discussion.'
 			await ctx.send(bot_message)
-			save(preferences, 'preferences.json')
+			await bot.save_settings()
 		else:
 			bot_message = 'I do hope that the honourable member is aware that this channel has indeed already been marked as a forum for political debate.'
 			await ctx.send(bot_message)
 		return
 
 	try:
-		if int(arg) not in preferences["politics_channels"]:
-			preferences["politics_channels"].append(int(arg))
+		if int(arg) not in bot.settings["politics_channels"]:
+			bot.settings["politics_channels"].append(int(arg))
 			bot_message = 'I thank the Honourable Member for identifying the correct forum for political discussion.'
 			await ctx.send(bot_message)
-			save(preferences, 'preferences.json')
+			await bot.save_settings()
 		else:
 			bot_message = 'I do hope that the honourable member is aware that the given channel has indeed already been marked as a forum for political debate.'
 			await ctx.send(bot_message)
@@ -171,24 +195,24 @@ async def setpolitics(ctx, arg=None):
 
 @bot.command()
 async def nobercow(ctx, arg=None):
-	if not ctx.message.author.id in preferences["admins"]:
+	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
 		await ctx.channel.send(bot_message)
 		return
 
 	if arg is None:
-		preferences["no_bercow"].append(ctx.channel.id)
+		bot.settings["no_bercow"].append(ctx.channel.id)
 		bot_message = 'I recognise that I am no longer welcome in this channel. \U0001f622'
 		await ctx.send(bot_message)
-		save(preferences, 'preferences.json')
+		await bot.save_settings()
 		return
 
 	try:
-		if int(arg) not in preferences["no_bercow"]:
-			preferences["no_bercow"].append(int(arg))
+		if int(arg) not in bot.settings["no_bercow"]:
+			bot.settings["no_bercow"].append(int(arg))
 			bot_message = 'As requested, I shall withdraw from the given channel indefinitely.'
 			await ctx.send(bot_message)
-			save(preferences, 'preferences.json')
+			await bot.save_settings()
 		else:
 			bot_message = 'I do hope that the honourable member is aware that I am no longer present in the specified channel.'
 			await ctx.send(bot_message)
@@ -201,26 +225,26 @@ async def nobercow(ctx, arg=None):
 
 @bot.command()
 async def setmusic(ctx, arg=None):
-	if not ctx.message.author.id in preferences["admins"]:
+	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
 		await ctx.channel.send(bot_message)
 		return
 
 	if arg is None:
-		if ctx.channel.id not in preferences["music_text"]:
-			preferences["music_text"].append(ctx.channel.id)
+		if ctx.channel.id not in bot.settings["music_text"]:
+			bot.settings["music_text"].append(ctx.channel.id)
 			bot_message = 'I hereby give notice that the government has successfully passed a motion to designate this channel a music channel.'
 
-			save(preferences, 'preferences.json')
+			await bot.save_settings()
 		else:
 			bot_message = 'It is rather disappointing that the honourable member insists on providing information we already know. If they would stop that would be much appreciated.'
 	else:
 		try:
-			if int(arg) not in preferences["music_text"]:
-				preferences["music_text"].append(int(arg))
+			if int(arg) not in bot.settings["music_text"]:
+				bot.settings["music_text"].append(int(arg))
 				channel_name = bot.get_channel(int(arg)).name
 
-				save(preferences, 'preferences.json')
+				await bot.save_settings
 			else:
 				bot_message = 'It is rather disappointing that the honourable member insists on providing information we already know. If they would stop that would be much appreciated.'
 				await ctx.send(bot_message)
@@ -237,7 +261,7 @@ async def setmusic(ctx, arg=None):
 
 @bot.command()
 async def setdj(ctx, arg=None):
-	if ctx.message.author.id not in preferences["admins"]:
+	if ctx.message.author.id not in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
 		await ctx.channel.send(bot_message)
 		return
@@ -249,11 +273,11 @@ async def setdj(ctx, arg=None):
 		return
 	else:
 		try:
-			if int(arg) not in preferences["music_voice"]:
-				preferences["music_voice"].append(int(arg))
+			if int(arg) not in bot.settings["music_voice"]:
+				bot.settings["music_voice"].append(int(arg))
 				channel_name = bot.get_channel(int(arg)).name
 
-				save(preferences, 'preferences.json')
+				await bot.save_settings
 			else:
 				bot_message = 'I tell the honourable member that I applaud their efforts, but I would remind them that this house does not need to hear a particular contribution ' \
 							  'multiple times, and I think their colleagues would appreciate it if they kept that in mind.'
@@ -311,6 +335,7 @@ async def vote(ctx, *args):
 	poll_question = await ctx.channel.send(bot_message_a)
 	await ctx.channel.send(bot_message_b)
 	poll_id = poll_question.id
+	bot.current_votes.append(poll_id)
 	await poll_question.add_reaction(emoji_tu)
 	await poll_question.add_reaction(emoji_td)
 
@@ -368,7 +393,7 @@ async def vote(ctx, *args):
 
 @bot.command()
 async def source(ctx):
-	if ctx.message.author.id not in preferences["admins"]:
+	if ctx.message.author.id not in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
 		await ctx.channel.send(bot_message)
 		return
