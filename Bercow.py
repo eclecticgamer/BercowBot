@@ -47,15 +47,6 @@ class BotClient(commands.Bot):
 			self.settings = json.load(x)
 		if not owner_id in self.settings['admins']:
 			self.settings['admins'].append(owner_id)
-		'''
-		self.settings = {}
-		self.settings['response_options'] = settings_file['response_options']
-		self.settings['politics_triggers'] = settings_file['politics_triggers']
-		self.settings['no_bercow'] = settings_file['no_bercow']
-		self.settings['politics_channels'] = settings_file['politics_channels']
-		self.settings['music_voice'] = settings_file['music_voice']
-		self.
-		'''
 		self.current_votes = []
 		print(json.dumps(self.settings, indent = 4, sort_keys = True))
 	
@@ -78,14 +69,18 @@ class BotClient(commands.Bot):
 			return
 			
 		await self.process_commands(message)
+		
+	
 	
 	async def mr_speaker(self, message):
+		#Corrects member if they refer to Mr Speaker by name
 		if ('bercow' in message.content or self.user in message.mentions) and command_prefix not in message.content:
 			await message.channel.send('ORDER! The Honourable Member must refer to me as Mr Speaker at all times. I ask that they withdraw their comment.')
 			return True
 		return False
 	
 	async def politics_chat(self, message):
+		#Identifies politics chat in wrong channels
 		message_words = message.content.lower().split(' ')
 		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
 			bot_message = random.choice(self.response_options)
@@ -95,8 +90,19 @@ class BotClient(commands.Bot):
 		await self.process_commands(message)
 	
 	async def save_settings(self):
+		#Saves the bot settings to an appropriate location
 		async with aiofiles.open(self.config_location, "w+") as x:
 			await x.write(json.dumps(self.settings, indent = 4, sort_keys = True))
+	
+	async def set_politics(self, channel_id):
+		if channel_id not in self.settings['politics_channels']:
+			self.settings['politics_channels'].append(channel_id)
+			await self.save_settings()
+			return 'I thank the Honourable Member for identifying this as the correct forum for political discussion'
+		else:
+			return 'I do hope that the Honourable Member is aware that the given channel has indeed already been identified as a channel of political discussion'
+	
+			
 		
 
 bot = BotClient(command_prefix, 'preferences.json')
@@ -158,39 +164,23 @@ async def burn(ctx, arg=None):
 
 @bot.command()
 async def setpolitics(ctx, arg=None):
+	#Check authorisation
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = 'I certainly won\'t take orders such as those from a junior minister! Hrumph!'
-		await ctx.channel.send(bot_message)
-		return
+	else:
+		try:
+			#Identify channel and pass to bot.set_politics which will do the work and return a message
+			if arg is None:
+				cid = ctx.channel.id
+			else:
+				cid = int(arg)
+			bot_message = await bot.set_politics(cid)
 
-	if arg is None:
-		if ctx.channel.id not in bot.settings["politics_channels"]:
-			bot.settings["politics_channels"].append(ctx.channel.id)
-			bot_message = 'I thank the Honourable Member for identifying this as the correct forum for political discussion.'
-			await ctx.send(bot_message)
-			await bot.save_settings()
-		else:
-			bot_message = 'I do hope that the honourable member is aware that this channel has indeed already been marked as a forum for political debate.'
-			await ctx.send(bot_message)
-		return
-
-	try:
-		if int(arg) not in bot.settings["politics_channels"]:
-			bot.settings["politics_channels"].append(int(arg))
-			bot_message = 'I thank the Honourable Member for identifying the correct forum for political discussion.'
-			await ctx.send(bot_message)
-			await bot.save_settings()
-		else:
-			bot_message = 'I do hope that the honourable member is aware that the given channel has indeed already been marked as a forum for political debate.'
-			await ctx.send(bot_message)
-
-	except:
-		# Broad exception because Bercow is lazy
-		bot_message_a = 'If the honourable member had consulted Erskine May, chapter 6, before making their request, they would have avoided wasting this chamber\'s time by issuing an invalid ' \
-						'request.'
-		bot_message_b = 'I ask that they are more careful next time.'
-		await ctx.send(bot_message_a)
-		await ctx.send(bot_message_b)
+		except:
+			# Broad exception because Bercow is lazy
+			bot_message = 'If the honourable member had consulted Erskine May, chapter 6, before making their request, they would have avoided wasting this chamber\'s time by issuing an invalid ' \
+							'request.\nI ask that they are more careful next time.'
+	await ctx.send(bot_message)
 
 
 @bot.command()
