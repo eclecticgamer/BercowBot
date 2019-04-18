@@ -359,7 +359,7 @@ async def vote(ctx, *args):
 @bot.command()
 async def source(ctx):
 	'''Bercow will provide a link to the source code'''
-	await ctx.send("You can find the source code for this bot at https://github.com/eclecticgamer/BercowBot"
+	await ctx.send("You can find the source code for this bot at https://github.com/eclecticgamer/BercowBot")
 	'''if ctx.message.author.id not in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
