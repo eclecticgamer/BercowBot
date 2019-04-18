@@ -83,7 +83,7 @@ class BotClient(commands.Bot):
 		#Identifies politics chat in wrong channels
 		message_words = message.content.lower().split(' ')
 		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
-			bot_message = random.choice(self.response_options)
+			bot_message = random.choice(self.settings['response_options'])
 			await message.channel.send(bot_message)
 			return True
 		return False
@@ -105,7 +105,7 @@ class BotClient(commands.Bot):
 	async def set_music(self, channel_id):
 		if channel_id not in self.settings['music_text']:
 			channel = self.get_channel(channel_id)
-			if channel is nothing:
+			if channel is None :
 				return random.choice(self.settings['responses']['invalid'])
 			else:
 				self.settings['music_text'].append(channel_id)
