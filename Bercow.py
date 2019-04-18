@@ -83,7 +83,7 @@ class BotClient(commands.Bot):
 		#Identifies politics chat in wrong channels
 		message_words = message.content.lower().split(' ')
 		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
-			bot_message = random.choice(self.settings['response_options'])
+			bot_message = random.choice(self.settings['response_options']).format(message.author)
 			await message.channel.send(bot_message)
 			return True
 		return False
@@ -121,6 +121,7 @@ bot = BotClient(command_prefix, 'preferences.json')
 
 @bot.command()
 async def burn(ctx, arg=None):
+	'''Applies a witty burn to a user of your choice'''
 	#No target
 	if arg is None:
 		bot_message = random.choice(bot.settings['burns']['no_target']).format(ctx)
@@ -153,6 +154,7 @@ async def burn(ctx, arg=None):
 
 @bot.command()
 async def setpolitics(ctx, arg=None):
+	'''Specifies a channel for politics.'''
 	#Check authorisation
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised'])
@@ -173,6 +175,7 @@ async def setpolitics(ctx, arg=None):
 
 @bot.command()
 async def nobercow(ctx, arg=None):
+	'''Specify a channel to exclude Bercow'''
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised'])
 		await ctx.channel.send(bot_message)
@@ -203,6 +206,7 @@ async def nobercow(ctx, arg=None):
 
 @bot.command()
 async def setmusic(ctx, arg=None):
+	'''Designates a channel as a music channel'''
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 	else:
@@ -221,6 +225,7 @@ async def setmusic(ctx, arg=None):
 
 @bot.command()
 async def setdj(ctx, arg=None):
+	'''Set a user as a DJ'''
 	if ctx.message.author.id not in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
@@ -254,6 +259,7 @@ async def setdj(ctx, arg=None):
 
 @bot.command()
 async def vote(ctx, *args):
+	'''Initiates a vote on a motion of your choice'''
 	if len(args) == 0:
 		bot_message = 'I\'m sure the Honourable Member is well aware that we cannot hold a vote unless they specify a motion. Please, try again {0.mention}'.format(ctx.author)
 		await ctx.send(bot_message)
@@ -352,7 +358,9 @@ async def vote(ctx, *args):
 
 @bot.command()
 async def source(ctx):
-	if ctx.message.author.id not in bot.settings["admins"]:
+	'''Bercow will provide a link to the source code'''
+	await ctx.send("You can find the source code for this bot at https://github.com/eclecticgamer/BercowBot"
+	'''if ctx.message.author.id not in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
 		return
@@ -371,7 +379,7 @@ async def source(ctx):
 			msg = msg + x
 
 	await ctx.message.channel.send(msg + "\n" + code_block)
-
+'''
 
 
 
