@@ -77,7 +77,7 @@ class BotClient(commands.Bot):
         # Identifies politics chat in wrong channels
         message_words = message.content.lower().split(' ')
         if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
-            bot_message = random.choice(self.response_options).format(message.author)
+            bot_message = random.choice(self.settings["response_options"]).format(message.author)
             await message.channel.send(bot_message)
             return True
         return False
