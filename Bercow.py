@@ -12,100 +12,100 @@ import aiofiles
 
 
 class NoExitParser(argparse.ArgumentParser):
-    def error(self, message):
-        raise ValueError(message)
+	def error(self, message):
+		raise ValueError(message)
 
 
 owner_id = 345468527538339850
-command_prefix = '!'
+command_prefix = '?'
 
 # with open('preferences.json', 'r') as file:
 #	preferences = json.load(file)
 
 
 try:
-    # Open token file and read it into TOKEN
-    with open('token.txt', mode='r') as txt:
-        TOKEN = txt.read()
+	# Open token file and read it into TOKEN
+	with open('token.txt', mode='r') as txt:
+		TOKEN = txt.read()
 
 except FileNotFoundError:
-    # If file does not exist, exit process
-    print('Token file does not exist. Quitting process...')
-    quit()
+	# If file does not exist, exit process
+	print('Token file does not exist. Quitting process...')
+	quit()
 
 with open('discordcodeblock.txt') as f:
-    code_block = f.read()
+	code_block = f.read()
 
 
 class BotClient(commands.Bot):
-    def __init__(self, command_prefix, config):
-        super().__init__(command_prefix=command_prefix)
-        self.config_location = config
-        with open(config, 'r') as x:
-            self.settings = json.load(x)
-        if not owner_id in self.settings['admins']:
-            self.settings['admins'].append(owner_id)
-        self.current_votes = []
-        print(json.dumps(self.settings, indent=4, sort_keys=True))
+	def __init__(self, command_prefix, config):
+		super().__init__(command_prefix=command_prefix)
+		self.config_location = config
+		with open(config, 'r') as x:
+			self.settings = json.load(x)
+		if not owner_id in self.settings['admins']:
+			self.settings['admins'].append(owner_id)
+		self.current_votes = []
+		print(json.dumps(self.settings, indent=4, sort_keys=True))
 
-    async def on_ready(self):
-        print('Logged in as')
-        print(self.user.name)
-        print(self.user.id)
-        print('------')
+	async def on_ready(self):
+		print('Logged in as')
+		print(self.user.name)
+		print(self.user.id)
+		print('------')
 
-    async def on_message(self, message):
-        if message.author.bot or message.channel.id in self.settings["no_bercow"]:
-            return
+	async def on_message(self, message):
+		if message.author.bot or message.channel.id in self.settings["no_bercow"]:
+			return
 
-        if await self.mr_speaker(message):
-            return
+		if await self.mr_speaker(message):
+			return
 
-        if await self.politics_chat(message):
-            return
+		if await self.politics_chat(message):
+			return
 
-        await self.process_commands(message)
+		await self.process_commands(message)
 
-    async def mr_speaker(self, message):
-        # Corrects member if they refer to Mr Speaker by name
-        if ('bercow' in message.content or self.user in message.mentions) and command_prefix not in message.content:
-            await message.channel.send('ORDER! The Honourable Member must refer to me as Mr Speaker at all times. I ask that they withdraw their comment.')
-            return True
-        return False
+	async def mr_speaker(self, message):
+		# Corrects member if they refer to Mr Speaker by name
+		if ('bercow' in message.content or self.user in message.mentions) and command_prefix not in message.content:
+			await message.channel.send('ORDER! The Honourable Member must refer to me as Mr Speaker at all times. I ask that they withdraw their comment.')
+			return True
+		return False
 
-    async def politics_chat(self, message):
-        # Identifies politics chat in wrong channels
-        message_words = message.content.lower().split(' ')
-        if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
-            bot_message = random.choice(self.settings["response_options"]).format(message.author)
-            await message.channel.send(bot_message)
-            return True
-        return False
+	async def politics_chat(self, message):
+		# Identifies politics chat in wrong channels
+		message_words = message.content.lower().split(' ')
+		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
+			bot_message = random.choice(self.settings["response_options"]).format(message.author)
+			await message.channel.send(bot_message)
+			return True
+		return False
 
-    async def save_settings(self):
-        # Saves the bot settings to an appropriate location
-        async with aiofiles.open(self.config_location, "w+") as x:
-            await x.write(json.dumps(self.settings, indent=4, sort_keys=True))
+	async def save_settings(self):
+		# Saves the bot settings to an appropriate location
+		async with aiofiles.open(self.config_location, "w+") as x:
+			await x.write(json.dumps(self.settings, indent=4, sort_keys=True))
 
-    async def set_politics(self, channel_id):
-        if channel_id not in self.settings['politics_channels']:
-            self.settings['politics_channels'].append(channel_id)
-            await self.save_settings()
-            return 'I thank the Honourable Member for identifying this as the correct forum for political discussion'
-        else:
-            return random.choice(self.settings['responses']['repeat'])
+	async def set_politics(self, channel_id):
+		if channel_id not in self.settings['politics_channels']:
+			self.settings['politics_channels'].append(channel_id)
+			await self.save_settings()
+			return 'I thank the Honourable Member for identifying this as the correct forum for political discussion'
+		else:
+			return random.choice(self.settings['responses']['repeat'])
 
-    async def set_music(self, channel_id):
-        if channel_id not in self.settings['music_text']:
-            channel = self.get_channel(channel_id)
-            if channel is None:
-                return random.choice(self.settings['responses']['invalid'])
-            else:
-                self.settings['music_text'].append(channel_id)
-                await self.save_settings()
-                return 'I hereby give notice that the government has successfully passed a motion to designate ' + channel.name + ' a music channel.'
-        else:
-            return random.choice(self.settings['responses']['repeat'])
+	async def set_music(self, channel_id):
+		if channel_id not in self.settings['music_text']:
+			channel = self.get_channel(channel_id)
+			if channel is None:
+				return random.choice(self.settings['responses']['invalid'])
+			else:
+				self.settings['music_text'].append(channel_id)
+				await self.save_settings()
+				return 'I hereby give notice that the government has successfully passed a motion to designate ' + channel.name + ' a music channel.'
+		else:
+			return random.choice(self.settings['responses']['repeat'])
 
 bot = BotClient(command_prefix, 'preferences.json')
 
@@ -225,32 +225,30 @@ async def setdj(ctx, arg=None):
 		bot_message = random.choice(bot.settings['responses']['unauthorised']).format(ctx)
 		await ctx.channel.send(bot_message)
 		return
+	if arg is None:
+		bot_message = 'I must kindly ask the Honourable Member to repeat their request but this time specifying a channel ID.'
 
+		await ctx.send(bot_message)
+		return
+	else:
+		try:
+			if int(arg) not in bot.settings["music_voice"]:
+				bot.settings["music_voice"].append(int(arg))
+				channel_name = bot.get_channel(int(arg)).name
 
-    if arg is None:
-        bot_message = 'I must kindly ask the Honourable Member to repeat their request but this time specifying a channel ID.'
+				await bot.save_settings
+			else:
+				bot_message = random.choice(bot.settings['responses']['repeat']).format(ctx)
+				await ctx.send(bot_message)
 
-        await ctx.send(bot_message)
-        return
-    else:
-        try:
-            if int(arg) not in bot.settings["music_voice"]:
-                bot.settings["music_voice"].append(int(arg))
-                channel_name = bot.get_channel(int(arg)).name
+				return
+		except:
+			# Broad exception because Bercow is lazy
+			bot_message = 'Unfortunately the Honourable Member has made an invalid request; I ask that they try again.'
+		else:
+			bot_message = 'I hereby give notice that the government has successfully passed a motion to designate ' + channel_name + ' a DJ channel.'
 
-                await bot.save_settings
-            else:
-                bot_message = random.choice(bot.settings['responses']['repeat']).format(ctx)
-                await ctx.send(bot_message)
-
-                return
-        except:
-            # Broad exception because Bercow is lazy
-            bot_message = 'Unfortunately the Honourable Member has made an invalid request; I ask that they try again.'
-        else:
-            bot_message = 'I hereby give notice that the government has successfully passed a motion to designate ' + channel_name + ' a DJ channel.'
-
-    await ctx.send(bot_message)
+	await ctx.send(bot_message)
 
 
 @bot.command()
@@ -360,38 +358,38 @@ async def source(ctx):
 	
 @bot.command()
 async def popcorn(ctx, *args):
-    popcorn_emoji = '\U0001f37f'
-    print(args)
-    num_popcorns = 0
-    popcorn_response = 'As requested, here is the Honourable Member\'s popcorn:'
-    popcorn_str = None
+	popcorn_emoji = '\U0001f37f'
+	print(args)
+	num_popcorns = 0
+	popcorn_response = 'As requested, here is the Honourable Member\'s popcorn:'
+	popcorn_str = None
 
-    if len(args) == 0:
-        num_popcorns = 5
-        popcorn_str = ''.join([popcorn_emoji] * 5)
-    elif len(args) == 1:
-        try:
-            num_popcorns = int(args[0])
+	if len(args) == 0:
+		num_popcorns = 5
+		popcorn_str = ''.join([popcorn_emoji] * 5)
+	elif len(args) == 1:
+		try:
+			num_popcorns = int(args[0])
 
-            if num_popcorns <= 0:
-                popcorn_response = 'I implore the Honourable Member to suggest how I should go about providing that many boxes of popcorn.'
-            elif num_popcorns > 20:
-                popcorn_response = 'I thank the Honourable Member for complimenting me by suggesting I would be able to carry that many boxes of popcorn, but unfortunately I am only human and thus ' \
-                                   'would struggle to carry more than 20.'
-            else:
-                popcorn_str = ''.join([popcorn_emoji] * num_popcorns)
+			if num_popcorns <= 0:
+				popcorn_response = 'I implore the Honourable Member to suggest how I should go about providing that many boxes of popcorn.'
+			elif num_popcorns > 20:
+				popcorn_response = 'I thank the Honourable Member for complimenting me by suggesting I would be able to carry that many boxes of popcorn, but unfortunately I am only human and thus ' \
+								   'would struggle to carry more than 20.'
+			else:
+				popcorn_str = ''.join([popcorn_emoji] * num_popcorns)
 
 
-        except:
-            popcorn_response = 'I will be the first to admit that the Honourable Member\'s request has confused me. How would they like me to use the irrelevant information they have provided ' \
-                               'me with?'
-    else:
-        popcorn_response = 'I admire the Honourable Member\'s enthusiasm but remind them that I would struggle to fulfill their request considering conflicting information has been provided.'
+		except:
+			popcorn_response = 'I will be the first to admit that the Honourable Member\'s request has confused me. How would they like me to use the irrelevant information they have provided ' \
+							   'me with?'
+	else:
+		popcorn_response = 'I admire the Honourable Member\'s enthusiasm but remind them that I would struggle to fulfill their request considering conflicting information has been provided.'
 
-    print(num_popcorns)
-    await ctx.send(popcorn_response)
-    if popcorn_str is not None:
-        await ctx.send(popcorn_str)
+	print(num_popcorns)
+	await ctx.send(popcorn_response)
+	if popcorn_str is not None:
+		await ctx.send(popcorn_str)
 
 bot.run(TOKEN)
 
