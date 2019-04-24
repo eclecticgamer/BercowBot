@@ -112,7 +112,6 @@ bot = BotClient(command_prefix, 'preferences.json')
 
 @bot.command()
 async def burn(ctx, arg=None):
-<<<<<<< HEAD
 	'''Applies a witty burn to a user of your choice'''
 	#No target
 	if arg is None:
@@ -146,7 +145,6 @@ async def burn(ctx, arg=None):
 
 @bot.command()
 async def setpolitics(ctx, arg=None):
-
 	'''Specifies a channel for politics.'''
 	#Check authorisation
 	if not ctx.message.author.id in bot.settings["admins"]:
