@@ -19,6 +19,9 @@ class NoExitParser(argparse.ArgumentParser):
 owner_id = 345468527538339850
 command_prefix = '?'
 
+
+
+
 # with open('preferences.json', 'r') as file:
 #	preferences = json.load(file)
 
@@ -46,7 +49,10 @@ class BotClient(commands.Bot):
 		if not owner_id in self.settings['admins']:
 			self.settings['admins'].append(owner_id)
 		self.current_votes = []
-		print(json.dumps(self.settings, indent=4, sort_keys=True))
+		self.current_vote_channels = []
+		self.emoji_tu = '\U0001f44d'
+		self.emoji_td = '\U0001f44e'
+		#print(json.dumps(self.settings, indent=4, sort_keys=True))
 
 	async def on_ready(self):
 		print('Logged in as')
@@ -55,16 +61,26 @@ class BotClient(commands.Bot):
 		print('------')
 
 	async def on_message(self, message):
-		if message.author.bot or message.channel.id in self.settings["no_bercow"]:
-			return
+		if message.content[:1]!=command_prefix:
+			if message.author.bot or message.channel.id in self.settings["no_bercow"]:
+				return
 
-		if await self.mr_speaker(message):
-			return
+			if await self.mr_speaker(message):
+				return
 
-		if await self.politics_chat(message):
-			return
+			if await self.politics_chat(message):
+				return
 
 		await self.process_commands(message)
+	
+	async def on_command_error(self, ctx, error):
+		if isinstance(error,commands.CommandOnCooldown):
+			await ctx.author.send(random.choice(self.settings["responses"]["cooldown"]).format(ctx))
+			try:
+				await ctx.message.delete()
+			except commands.Forbidden:
+				print("I do not have permissions to delete messages in {0.channel.name}".format(ctx))
+			
 
 	async def mr_speaker(self, message):
 		# Corrects member if they refer to Mr Speaker by name
@@ -107,10 +123,109 @@ class BotClient(commands.Bot):
 		else:
 			return random.choice(self.settings['responses']['repeat'])
 
+	async def start_poll(self, motion, context, time, unanimous):
+		ctx = context
+		#await ctx.send("Poll initiated")
+		if unanimous:
+			unanimous_str = 'This motion must be passed unanimously.'
+		else:
+			unanimous_str = ''
+		#ctx.send("Unanimous processed")
+
+		bot_message_a = 'The question is that ' + motion
+
+		bot_message_a = bot_message_a + '\nAs many as are of that opinion react ' + self.emoji_tu + '. On the contrary ' + self.emoji_td + '.'
+
+		bot_message_b = ('DIVISION! CLEAR THE LOBBY. You have %d seconds to vote. ' + unanimous_str) % time
+		
+		poll_question = await ctx.send(bot_message_a)
+		await ctx.send(bot_message_b)
+		poll_id = poll_question.id
+		await poll_question.add_reaction(self.emoji_tu)
+		await poll_question.add_reaction(self.emoji_td)		
+		print("About to append to current_votes")
+		self.current_votes.append({"motion": motion, "poll_id": poll_id, "channel": ctx.channel.id, "unanimous":unanimous})
+		print(self.current_votes)
+		
+		await asyncio.sleep(time)
+		
+		for x in self.current_votes:
+			if x["poll_id"]==poll_id:
+#				await ctx.send("calling resolve_poll")
+				await self.resolve_poll(poll_id)
+		else:
+			print("Vote {0} has been cancelled".format(poll_id))
+		
+
+		
+		
+
+	async def resolve_poll(self, poll_id):
+		
+		for x in self.current_votes:
+			if x["poll_id"]==poll_id:
+				channel = self.get_channel(x["channel"])
+#				await channel.send("Got poll and context")
+				try:
+					#Get poll message
+					final_poll = await channel.fetch_message(poll_id)
+					poll_result = final_poll.reactions
+					print(poll_result)
+
+					ayes = 0
+					noes = 0
+					
+					bot_message = ''
+					
+					#Perform the count
+					for result in poll_result:
+						if result.emoji == self.emoji_tu:
+							ayes = result.count - 1
+						elif result.emoji == self.emoji_td:
+							noes = result.count - 1
+						else:
+							bot_message = 'I see an honourable member has abstained from voting by providing an alternative response. I reassure them that this will go on the record, ' \
+										  'although I\'m not sure what good it will do.\n'
+					channel.send("results processed")
+					#No votes
+					if ayes + noes ==0:
+						bot_message = 'I see no-one has cast a vote. I would ask that in future, the honourable member refrains from proposing motions that even he is ambivalent about.'
+					else:		
+						bot_message = bot_message +	'The ayes to the right: %d. The noes to the left: %d \n' % (ayes, noes)
+
+					#Unanimous vote failed
+					if x["unanimous"] and not (ayes == 0 or noes == 0):
+						bot_message = bot_message + 'I notice that there is disagreement amoungst Honourable Members. So the unanimous motion has failed.'
+
+					#Clear winner
+					elif not ayes == noes:
+						winner = {
+							0: 'noes',
+							1: 'ayes'
+						}
+						result_str = winner[ayes > noes]
+						bot_message = bot_message + 'So the %s have it. The %s have it. \n' % (result_str, result_str)
+						if x["unanimous"]:
+							bot_message = bot_message + 'Thus this unanimous motion has passed successfully.\n'
+					
+					else:
+						bot_message = 'It is parliamentary custom for the speaker not to create a majority where one would otherwise not exist. So I cast my vote with the noes. The noes have it.\n'
+					bot_message = bot_message + 'UNLOCK!'
+					await channel.send(bot_message)
+					self.current_vote_channels.remove(channel.id)
+				except Exception as e:
+					print('Caught error: ' + repr(e))
+					bot_message = 'I am afraid there has been a counting issue and we must hold the vote again at a later date.'
+					self.current_vote_channels.remove(channel.id)
+
+					await channel.send(bot_message)				
+
+				self.current_votes.remove(x)
 bot = BotClient(command_prefix, 'preferences.json')
 
 
 @bot.command()
+@commands.cooldown(2,60, type=commands.BucketType.channel)
 async def burn(ctx, arg=None):
 	'''Applies a witty burn to a user of your choice'''
 	#No target
@@ -167,7 +282,6 @@ async def setpolitics(ctx, arg=None):
 
 @bot.command()
 async def nobercow(ctx, arg=None):
-
 	'''Specify a channel to exclude Bercow'''
 	if not ctx.message.author.id in bot.settings["admins"]:
 		bot_message = random.choice(bot.settings['responses']['unauthorised'])
@@ -252,102 +366,42 @@ async def setdj(ctx, arg=None):
 
 
 @bot.command()
+#@commands.cooldown(1,600, type=commands.BucketType.channel)
 async def vote(ctx, *args):
 	'''Initiates a vote on a motion of your choice'''
+	#await ctx.send("vote commenced")
 	if len(args) == 0:
 		bot_message = 'I\'m sure the Honourable Member is well aware that we cannot hold a vote unless they specify a motion. Please, try again {0.mention}'.format(ctx.author)
 		await ctx.send(bot_message)
 		return
-
+	if ctx.channel.id in bot.current_vote_channels:
+		msg = random.choice(bot.settings["responses"]["multiple_votes"]).format(ctx)
+		await ctx.send(msg)
+		return
+	else:
+		bot.current_vote_channels.append(ctx.channel.id)
+#	await ctx.send("About to parse parameters")
 	value_required = ['-time']
-
 	args_tb_parsed = [a for a in args if (a.startswith('-') or args[args.index(a) - 1] in value_required)]
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-time", type=int)
 	parser.add_argument("-unanimous", action="store_true")
 	parsed_args = parser.parse_args(args_tb_parsed)
-
 	if parsed_args.time is not None:
 		time = parsed_args.time
 	else:
-		time = 30
-
-	if parsed_args.unanimous:
-		unanimous_str = 'This motion must be passed unanimously.'
+		time = 30	
+	if parsed_args.unanimous is None:
+		unanimous = False
 	else:
-		unanimous_str = ''
-
-	emoji_tu = '\U0001f44d'
-	emoji_td = '\U0001f44e'
-
-	bot_message_a = 'The question is that'
-
+		unanimous = parsed_args.unanimous
 	args = [a for a in args if not (a.startswith('-') or args[args.index(a) - 1] in value_required)]
+#	await ctx.send("Parsed Arguments")
+	motion = ' '.join(args)
+	#await ctx.send(motion)
+	await bot.start_poll(motion, ctx, time, unanimous)
 
-	for a in args:
-		bot_message_a = bot_message_a + ' ' + a
 
-	bot_message_a = bot_message_a + '\nAs many as are of that opinion react ' + emoji_tu + '. On the contrary ' + emoji_td + '.'
-
-	bot_message_b = ('DIVISION! CLEAR THE LOBBY. You have %d seconds to vote. ' + unanimous_str) % time
-
-	poll_question = await ctx.channel.send(bot_message_a)
-	await ctx.channel.send(bot_message_b)
-	poll_id = poll_question.id
-	bot.current_votes.append(poll_id)
-	await poll_question.add_reaction(emoji_tu)
-	await poll_question.add_reaction(emoji_td)
-
-	await asyncio.sleep(time)
-	try:
-		final_poll = await ctx.channel.fetch_message(poll_id)
-		poll_result = final_poll.reactions
-		print(poll_result)
-
-		ayes = 0
-		noes = 0
-
-		for result in poll_result:
-			if result.emoji == emoji_tu:
-				ayes = result.count - 1
-			elif result.emoji == emoji_td:
-				noes = result.count - 1
-			else:
-				bot_message = 'I see an honourable member has abstained from voting by providing an alternative response. I reassure them that this will go on the record, ' \
-							  'although I\'m not sure what good it will do.'
-				await ctx.send(bot_message)
-
-		bot_message = 'The ayes to the right: %d. The noes to the left: %d' % (ayes, noes)
-		await ctx.send(bot_message)
-
-		if parsed_args.unanimous and not (ayes == 0 or noes == 0):
-			bot_message = 'I notice that there is disagreement amoungst Honourable Members. So the unanimous motion has failed.'
-			await ctx.send(bot_message)
-			return
-
-		if not ayes == noes:
-			winner = {
-				0: 'noes',
-				1: 'ayes'
-			}
-			result_str = winner[ayes > noes]
-			bot_message = 'So the %s have it. The %s have it. ' % (result_str, result_str)
-			if parsed_args.unanimous:
-				bot_message = bot_message + 'Thus this unanimous motion has passed successfully.'
-
-			bot_message = bot_message + '\nUNLOCK!'
-		else:
-			if ayes == 0:
-				bot_message = 'I see no-one has casted a vote. I would ask that in future, the honourable member refrains from proposing motions that even he is ambivalent about.'
-			else:
-				bot_message = 'It is parliamentary custom for the speaker not to create a majority where one would otherwise not exist. So I cast my vote with the noes. The noes have it.\nUNLOCK!'
-
-		await ctx.send(bot_message)
-	except Exception as e:
-		print('Caught error: ' + repr(e))
-		bot_message = 'I am afraid there has been a counting issue and we must hold the vote again at a later date.'
-
-		await ctx.send(bot_message)
 
 
 @bot.command()
