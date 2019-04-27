@@ -6,6 +6,7 @@ import random
 import argparse
 import json
 import aiofiles
+import time
 
 
 # from methods import save
@@ -52,6 +53,7 @@ class BotClient(commands.Bot):
 		self.current_vote_channels = []
 		self.emoji_tu = '\U0001f44d'
 		self.emoji_td = '\U0001f44e'
+		self.politics_cooldowns ={}
 		#print(json.dumps(self.settings, indent=4, sort_keys=True))
 
 	async def on_ready(self):
@@ -93,10 +95,26 @@ class BotClient(commands.Bot):
 		# Identifies politics chat in wrong channels
 		message_words = message.content.lower().split(' ')
 		if not set(message_words).isdisjoint(set(self.settings['politics_triggers'])) and message.channel.id not in self.settings["politics_channels"]:
-			bot_message = random.choice(self.settings["response_options"]).format(message.author)
-			await message.channel.send(bot_message)
-			return True
+			if message.channel.id in self.politics_cooldowns:
+				if self.politics_cooldowns[message.channel.id]+60<time.time():
+					await self.politics_warn(message.channel, message.author)
+					self.politics_cooldowns[message.channel.id] = time.time()
+					return True
+				else:
+					await self.politics_warn(message.author, message.author)
+					return False
+			else:
+				await self.politics_warn(message.channel, message.author)
+				self.politics_cooldowns[message.channel.id] = time.time()
+				return True
+			
 		return False
+	
+	async def politics_warn(self, target_channel, target_user):
+		'''Warn messageable to use an appropriate channel'''
+		bot_message = random.choice(self.settings['responses']['politics']).format(target_user)
+		await target_channel.send(bot_message)
+	
 
 	async def save_settings(self):
 		# Saves the bot settings to an appropriate location
@@ -122,8 +140,23 @@ class BotClient(commands.Bot):
 				return 'I hereby give notice that the government has successfully passed a motion to designate ' + channel.name + ' a music channel.'
 		else:
 			return random.choice(self.settings['responses']['repeat'])
-
+			
+	async def dispense_popcorn(self, channel, number):
+		'''Dispense the appropriate number of popcorn'''
+		popcorn_emoji = '\U0001f37f'
+		if number<=0:
+			response = 'I implore the Honourable Member to suggest how I should go about providing that many boxes of popcorn.'
+		else:
+			if number >20:
+				response = random.choice(self.settings['responses']['too_much_corn'])
+				number = 20
+			else:
+				response = "As requested, here is the honourable member's popcorn:\n"
+			response = response + ''.join([popcorn_emoji] * number)
+			await channel.send(response)
+			
 	async def start_poll(self, motion, context, time, unanimous):
+		'''Initiates a poll given the motion, message context, time and unanimous parameters'''
 		ctx = context
 		#await ctx.send("Poll initiated")
 		if unanimous:
@@ -133,11 +166,8 @@ class BotClient(commands.Bot):
 		#ctx.send("Unanimous processed")
 
 		bot_message_a = 'The question is that ' + motion
-
 		bot_message_a = bot_message_a + '\nAs many as are of that opinion react ' + self.emoji_tu + '. On the contrary ' + self.emoji_td + '.'
-
 		bot_message_b = ('DIVISION! CLEAR THE LOBBY. You have %d seconds to vote. ' + unanimous_str) % time
-		
 		poll_question = await ctx.send(bot_message_a)
 		await ctx.send(bot_message_b)
 		poll_id = poll_question.id
@@ -161,7 +191,7 @@ class BotClient(commands.Bot):
 		
 
 	async def resolve_poll(self, poll_id):
-		
+		'''Resolves a poll given a poll message ID'''
 		for x in self.current_votes:
 			if x["poll_id"]==poll_id:
 				channel = self.get_channel(x["channel"])
@@ -221,6 +251,8 @@ class BotClient(commands.Bot):
 					await channel.send(bot_message)				
 
 				self.current_votes.remove(x)
+
+#instantiate the bot				
 bot = BotClient(command_prefix, 'preferences.json')
 
 
@@ -241,7 +273,7 @@ async def burn(ctx, arg=None):
 			#count targets
 			count = 0
 			for x in ctx.channel.members:
-				if arg in x.display_name.lower() or arg in x.name.lower():
+				if arg.lower() in x.display_name.lower() or arg.lower() in x.name.lower():
 					target = x
 					count = count + 1
 			if count == 0:
@@ -411,39 +443,27 @@ async def source(ctx):
 
 	
 @bot.command()
+@commands.cooldown(1,60,type=commands.BucketType.channel)
 async def popcorn(ctx, *args):
 	popcorn_emoji = '\U0001f37f'
-	print(args)
-	num_popcorns = 0
-	popcorn_response = 'As requested, here is the Honourable Member\'s popcorn:'
-	popcorn_str = None
-
-	if len(args) == 0:
-		num_popcorns = 5
-		popcorn_str = ''.join([popcorn_emoji] * 5)
-	elif len(args) == 1:
-		try:
+	try:
+		if len(args) == 0:
+			num_popcorns = 5
+		elif len(args) == 1:
 			num_popcorns = int(args[0])
-
-			if num_popcorns <= 0:
-				popcorn_response = 'I implore the Honourable Member to suggest how I should go about providing that many boxes of popcorn.'
-			elif num_popcorns > 20:
-				popcorn_response = 'I thank the Honourable Member for complimenting me by suggesting I would be able to carry that many boxes of popcorn, but unfortunately I am only human and thus ' \
-								   'would struggle to carry more than 20.'
-			else:
-				popcorn_str = ''.join([popcorn_emoji] * num_popcorns)
-
-
-		except:
-			popcorn_response = 'I will be the first to admit that the Honourable Member\'s request has confused me. How would they like me to use the irrelevant information they have provided ' \
-							   'me with?'
-	else:
+		else:
+			raise TypeError('More than one argument')
+	except TypeError:
 		popcorn_response = 'I admire the Honourable Member\'s enthusiasm but remind them that I would struggle to fulfill their request considering conflicting information has been provided.'
+		await ctx.send(popcorn_response)
+	except:
+		popcorn_response = 'I will be the first to admit that the Honourable Member\'s request has confused me. How would they like me to use the irrelevant information they have provided ' \
+								'me with?'
+		await ctx.send(popcorn_response)
+	else:
+		await bot.dispense_popcorn(ctx.channel, num_popcorns)
 
-	print(num_popcorns)
-	await ctx.send(popcorn_response)
-	if popcorn_str is not None:
-		await ctx.send(popcorn_str)
+
 
 bot.run(TOKEN)
 

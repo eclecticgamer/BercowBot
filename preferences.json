@@ -19,11 +19,7 @@
         "referendum",
         "election",
         "parliament"
-    ],
-    "response_options": [
-        "ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place.",
-        "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum.",
-        "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""]
+    ]
 , "burns": {"no_target": ["It should be readily apparent to honourable members that the burn command requires a target.  It's a point so blindingly obvious that only an extraordinarily clever and sophisticated person could fail to grasp it, {0.author.mention}"
 							]
 			, "multiple_targets": ["It is most unparliamentary to cast such wide aspersions on honourable members.  Please be more specific in who you wish to address, {0.author.mention}"]
@@ -35,5 +31,11 @@
 		, "invalid": ["If the honourable member had consulted Erskine May, chapter 6, before making their request, they would have avoided wasting this chamber's time by issuing an invalid request.\nI ask that they are more careful next time."]
 		, "cooldown": ["ORRRDDEEEEERRRR - members must refrain from spamming the channel with incessant commands.  Calm yourself {0.author.mention}"]
 		, "multiple_votes":["ORRRRRDEEEERRRRRR - procedings in the chamber must be conducted in an orderly fashion.  This means, {0.author.mention}, that multiple votes may not be undertaken concurrently.  You must wait for the current vote to be completed before proposing a further motion"]
+		, "too_much_corn":["I thank the Honourable Member for complimenting me by suggesting I would be able to carry that many boxes of popcorn, but unfortunately I am only human and thus could not carry more than 20:\n",
+							"The Honourable Member must curb their excess, I can only carry 20 boxes:\n",
+							"The Honourable Member is most greedy.  20 boxes will have to suffice:\n"]
+		, "politics":["ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place.",
+        "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum.",
+        "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""]
 	}
 }
