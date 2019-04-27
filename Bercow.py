@@ -72,7 +72,9 @@ class BotClient(commands.Bot):
 
 			if await self.politics_chat(message):
 				return
-
+			
+			if await self.students(message):
+				return
 		await self.process_commands(message)
 	
 	async def on_command_error(self, ctx, error):
@@ -82,8 +84,23 @@ class BotClient(commands.Bot):
 				await ctx.message.delete()
 			except commands.Forbidden:
 				print("I do not have permissions to delete messages in {0.channel.name}".format(ctx))
-			
-
+	
+	async def students(self, message):
+		suspect = str(message.author.id)
+		print(str(suspect) in self.settings["students"])
+		print(suspect in self.settings["students"])
+		print(self.settings["students"])
+		if suspect in self.settings["students"] or message.author.id in self.settings["students"]:
+			if random.randint(1,10)<=self.settings["students"][suspect]:
+				bot_message = random.choice(self.settings["responses"]["students"]).format(message)
+				print(bot_message)
+				await message.channel.send(bot_message)
+				self.settings["students"][suspect] = 0
+				return True
+			else:
+				self.settings["students"][suspect] += 1
+		return False
+	
 	async def mr_speaker(self, message):
 		# Corrects member if they refer to Mr Speaker by name
 		if ('bercow' in message.content or self.user in message.mentions) and command_prefix not in message.content:
@@ -117,11 +134,12 @@ class BotClient(commands.Bot):
 	
 
 	async def save_settings(self):
-		# Saves the bot settings to an appropriate location
+		''' Saves the bot settings to an appropriate location'''
 		async with aiofiles.open(self.config_location, "w+") as x:
 			await x.write(json.dumps(self.settings, indent=4, sort_keys=True))
 
 	async def set_politics(self, channel_id):
+		'''executes the set politics command'''
 		if channel_id not in self.settings['politics_channels']:
 			self.settings['politics_channels'].append(channel_id)
 			await self.save_settings()
@@ -130,6 +148,7 @@ class BotClient(commands.Bot):
 			return random.choice(self.settings['responses']['repeat'])
 
 	async def set_music(self, channel_id):
+		'''designates a channel as music'''
 		if channel_id not in self.settings['music_text']:
 			channel = self.get_channel(channel_id)
 			if channel is None:
@@ -140,7 +159,7 @@ class BotClient(commands.Bot):
 				return 'I hereby give notice that the government has successfully passed a motion to designate ' + channel.name + ' a music channel.'
 		else:
 			return random.choice(self.settings['responses']['repeat'])
-			
+		
 	async def dispense_popcorn(self, channel, number):
 		'''Dispense the appropriate number of popcorn'''
 		popcorn_emoji = '\U0001f37f'
@@ -185,10 +204,6 @@ class BotClient(commands.Bot):
 				await self.resolve_poll(poll_id)
 		else:
 			print("Vote {0} has been cancelled".format(poll_id))
-		
-
-		
-		
 
 	async def resolve_poll(self, poll_id):
 		'''Resolves a poll given a poll message ID'''
@@ -251,7 +266,7 @@ class BotClient(commands.Bot):
 					await channel.send(bot_message)				
 
 				self.current_votes.remove(x)
-
+		
 #instantiate the bot				
 bot = BotClient(command_prefix, 'preferences.json')
 
@@ -436,10 +451,7 @@ async def vote(ctx, *args):
 
 
 
-@bot.command()
-async def source(ctx):
-	'''Bercow will provide a link to the source code'''
-	await ctx.send("You can find the source code for this bot at https://github.com/eclecticgamer/BercowBot")
+
 
 	
 @bot.command()

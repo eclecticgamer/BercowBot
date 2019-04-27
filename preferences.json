@@ -2,6 +2,11 @@
     "admins": [
         345468527538339850
     ],
+	"students": {"345468527538339850":10
+					, "169891281139531776":10
+					, "563489690330595328":10
+					, "234031574973153280":10
+					},
     "music_text": [],
     "music_voice": [],
     "no_bercow": [],
@@ -37,5 +42,8 @@
 		, "politics":["ORRRRDEEEEEERRRRRRRRRRRR! I cannot allow political discussion in this forum. Please respect other members and discuss these issues in the correct place.",
         "Order! I don\"t wish to hear it; neither does the House. The Right Honourable Member must take their political discussions to the correct forum.",
         "Mr {0.mention}! You really are a rather over-excited individual! You need to write out 1,000 times \"I will solely discuss politics in the correct channel.\""]
+		, "students":["ORRRRRDDEEEERRRR! Mr {0.author.mention} you really do have better things to do than talk in this server.  Please return to your studies immediately"
+		, "ORRRRRRDDEEERRRR! MR {0.author.mention}, while I do greatly appreciate your talent for procrastination, now is not the time to ignore your studies"
+		, "ORRRRDDDDEEERRR!  Mr {0.author.mention} you really should pay full attention to your studies, or you might have to seek a permanent position in this place"]
 	}
 }
